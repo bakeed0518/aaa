@@ -1,0 +1,15 @@
+# ================================================
+# Vylze "You Fucked Up" Warning Page
+# Simple static HTML + IP logger
+# ================================================
+
+FROM nginx:alpine
+
+# Copy the HTML file to nginx static directory
+COPY vylze-fucked-up.html /usr/share/nginx/html/index.html
+
+# Expose port 80 (Render default)
+EXPOSE 80
+
+# Nginx will serve the static HTML file
+CMD ["nginx", "-g", "daemon off;"]
